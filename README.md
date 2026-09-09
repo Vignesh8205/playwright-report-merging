@@ -1,11 +1,9 @@
-# AI Driven Consultancy QA Automation Framework
+# Playwright Report Merging Workflow
 
-This repository contains an enterprise-grade QA Automation framework built using Playwright.
-
-## Prerequisites
-- Node.js (v18+)
+This repository demonstrates a workflow for Playwright where we run tests, rerun failed tests, and then merge the blob reports together to form a final HTML report that correctly replaces failed attempts with their corresponding retries.
 
 ## Setup
+
 1. Install dependencies:
    ```bash
    npm install
@@ -15,36 +13,30 @@ This repository contains an enterprise-grade QA Automation framework built using
    npx playwright install
    ```
 
-## Running Tests
-Run tests locally using the default environment (`qa`):
+## Workflow Overview
+
+1. **Initial Run:** Run the test suite and output blob reports to `blob-report/initial`.
+2. **Rerun Failed:** Rerun the failed tests and output blob reports to `blob-report/rerun`.
+3. **Merge:** A custom script merges these reports by updating timestamps and replacing the initial failed test records with their retry records, producing a single merged blob report.
+4. **Final Report:** Playwright's `merge-reports` CLI turns the merged blob into a final HTML report.
+
+## Running the Workflow
+
+Run all tests initially:
 ```bash
 npm run test
 ```
 
-Run tests with UI mode:
+If any tests failed, run the failing tests again:
 ```bash
-npm run test:ui
+npm run test:failed
 ```
 
-Run tests against a specific environment (dev, staging):
+Finally, run the custom merge script which will merge `initial` and `rerun` blob reports, and launch the final merged HTML report:
 ```bash
-ENV=dev npm run test
+npm run test:final-report
 ```
 
-## Reporting
-Generate and open the Allure report:
-```bash
-npm run report
-```
+## How It Works
 
-## CI/CD and Sharding
-Playwright test sharding allows you to distribute tests across multiple CI machines.
-To run a specific shard:
-```bash
-npx playwright test --shard=1/3
-```
-In your CI pipeline, upload the `blob` reports from each shard, download them in a merge job, and run:
-```bash
-npx playwright merge-reports --reporter html ./allure-results
-```
-Note: Ensure Allure results are merged or generated appropriately depending on your CI plugin.
+The `scripts/merge-and-replace.ts` script uses `adm-zip` to extract the blob reports (which are zip files), combine their `report.jsonl` files (removing older failed attempts of the same test if a retry exists), and package them into a new zipped blob report in `blob-report/merged`. Then, it runs the standard `npx playwright merge-reports` to generate a comprehensive HTML report.
