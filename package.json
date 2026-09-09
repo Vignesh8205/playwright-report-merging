@@ -1,0 +1,34 @@
+{
+  "name": "test-agents",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "cross-env PLAYWRIGHT_BLOB_OUTPUT_DIR=blob-report/initial playwright test --reporter=blob",
+    "test:ui": "playwright test --ui",
+    "test:failed": "cross-env PLAYWRIGHT_BLOB_OUTPUT_DIR=blob-report/rerun playwright test --last-failed --reporter=blob",
+    "test:final-report": "tsx scripts/merge-and-replace.ts",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "report": "allure generate allure-results -o allure-report --clean && allure open allure-report"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@faker-js/faker": "^10.6.0",
+    "@playwright/test": "^1.62.1",
+    "@types/adm-zip": "^0.5.8",
+    "adm-zip": "^0.6.0",
+    "allure-commandline": "^2.43.0",
+    "allure-playwright": "^3.11.0",
+    "cross-env": "^10.1.0",
+    "dotenv": "^17.4.2",
+    "eslint": "^10.9.1",
+    "husky": "^9.1.7",
+    "prettier": "^3.9.6",
+    "ts-node": "^10.9.2",
+    "tsx": "^4.23.13",
+    "typescript": "^7.0.2"
+  }
+}
