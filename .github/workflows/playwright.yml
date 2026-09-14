@@ -60,14 +60,17 @@ jobs:
       - name: Set Matrix Output
         id: set-matrix
         run: |
-          MATRIX=$(cat matrix.json)
-          echo "matrix=$MATRIX" >> $GITHUB_OUTPUT
-          echo "Discovered matrix: $MATRIX"
+          echo "Discovered matrix: $(cat matrix.json)"
+          {
+            echo "matrix<<EOF"
+            cat matrix.json
+            echo "EOF"
+          } >> $GITHUB_OUTPUT
 
   execute:
     name: Execute Test
     needs: discover
-    if: needs.discover.outputs.matrix != '[]' && needs.discover.outputs.matrix != ''
+    if: ${{ needs.discover.outputs.matrix != '[]' && needs.discover.outputs.matrix != '' && needs.discover.outputs.matrix != 'null' }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
