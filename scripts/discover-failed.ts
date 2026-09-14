@@ -22,7 +22,7 @@ function main() {
   const listFile = path.join(process.cwd(), 'failed-tests.json');
 
   if (!fs.existsSync(blobDir)) {
-    console.log(JSON.stringify([]));
+    fs.writeFileSync('matrix.json', JSON.stringify([]), 'utf8');
     return;
   }
 
@@ -37,7 +37,7 @@ function main() {
   }
 
   if (!fs.existsSync(listFile)) {
-    console.log(JSON.stringify([]));
+    fs.writeFileSync('matrix.json', JSON.stringify([]), 'utf8');
     return;
   }
 
@@ -46,7 +46,7 @@ function main() {
   try {
     data = JSON.parse(raw);
   } catch (e) {
-    console.log(JSON.stringify([]));
+    fs.writeFileSync('matrix.json', JSON.stringify([]), 'utf8');
     return;
   }
 
@@ -64,8 +64,8 @@ function main() {
     fs.unlinkSync(listFile);
   }
 
-  // Output purely the JSON array so GitHub Actions can parse it into the matrix
-  console.log(JSON.stringify(testsToRun));
+  // Output purely the JSON array to matrix.json so GitHub Actions can parse it reliably
+  fs.writeFileSync('matrix.json', JSON.stringify(testsToRun), 'utf8');
 }
 
 main();

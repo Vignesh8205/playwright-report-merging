@@ -69,8 +69,8 @@ function main() {
     fs.unlinkSync(listFile);
   }
 
-  // Output purely the JSON array so GitHub Actions can parse it into the matrix
-  console.log(JSON.stringify(testsToRun));
+  // Output purely the JSON array to matrix.json so GitHub Actions can parse it reliably
+  fs.writeFileSync('matrix.json', JSON.stringify(testsToRun), 'utf8');
 }
 
 main();
