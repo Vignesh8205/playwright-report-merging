@@ -17,36 +17,62 @@ function findFailedSpecs(suite: any, file: string, testsToRun: string[]) {
   }
 }
 
+function writeMatrix(tests: string[]) {
+  fs.writeFileSync('matrix.json', JSON.stringify(tests), 'utf8');
+  console.log(`matrix.json written with ${tests.length} test(s): ${JSON.stringify(tests)}`);
+}
+
 function main() {
-  const blobDir = process.argv[2] || 'previous-blob-reports';
+  const blobDir = path.resolve(process.argv[2] || 'previous-blob-reports');
   const listFile = path.join(process.cwd(), 'failed-tests.json');
 
   if (!fs.existsSync(blobDir)) {
-    fs.writeFileSync('matrix.json', JSON.stringify([]), 'utf8');
+    console.log(`Blob dir not found: ${blobDir}`);
+    writeMatrix([]);
     return;
   }
 
+  let raw = '';
   try {
-    // Merge previous blobs into a single JSON report
-    execSync(`npx cross-env PLAYWRIGHT_JSON_OUTPUT_NAME=${listFile} npx playwright merge-reports ${blobDir} --reporter=json`, { 
-      cwd: process.cwd(), 
-      stdio: 'pipe' 
-    });
-  } catch (error) {
-    // Playwright exits with 1 if there were test failures in the report, which is expected here!
+    // Merge blobs and capture JSON output
+    raw = execSync(
+      `npx playwright merge-reports ${blobDir} --reporter=json`,
+      { cwd: process.cwd(), encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'],
+        env: { ...process.env, PLAYWRIGHT_JSON_OUTPUT_NAME: listFile } }
+    );
+  } catch (err: any) {
+    // playwright exits non-zero when there are failures — that's expected
+    raw = err.stdout || '';
   }
 
-  if (!fs.existsSync(listFile)) {
-    fs.writeFileSync('matrix.json', JSON.stringify([]), 'utf8');
+  // Try reading from PLAYWRIGHT_JSON_OUTPUT_NAME file first
+  if (fs.existsSync(listFile)) {
+    raw = fs.readFileSync(listFile, 'utf8');
+    fs.unlinkSync(listFile);
+  }
+
+  if (!raw.trim()) {
+    console.log('No output from merge-reports');
+    writeMatrix([]);
     return;
   }
 
-  const raw = fs.readFileSync(listFile, 'utf8');
-  let data;
+  // Extract JSON from output (might have extra lines before it)
+  const startIndex = raw.indexOf('{');
+  const endIndex = raw.lastIndexOf('}');
+
+  if (startIndex === -1 || endIndex === -1) {
+    console.log('Could not find JSON in merge output');
+    writeMatrix([]);
+    return;
+  }
+
+  let data: any;
   try {
-    data = JSON.parse(raw);
+    data = JSON.parse(raw.substring(startIndex, endIndex + 1));
   } catch (e) {
-    fs.writeFileSync('matrix.json', JSON.stringify([]), 'utf8');
+    console.log('Failed to parse JSON:', e);
+    writeMatrix([]);
     return;
   }
 
@@ -59,13 +85,7 @@ function main() {
     }
   }
 
-  // Cleanup
-  if (fs.existsSync(listFile)) {
-    fs.unlinkSync(listFile);
-  }
-
-  // Output purely the JSON array to matrix.json so GitHub Actions can parse it reliably
-  fs.writeFileSync('matrix.json', JSON.stringify(testsToRun), 'utf8');
+  writeMatrix(testsToRun);
 }
 
 main();

@@ -15,44 +15,50 @@ function extractSpecs(suite: any, file: string, testsToRun: string[]) {
   }
 }
 
+function writeMatrix(tests: string[]) {
+  fs.writeFileSync('matrix.json', JSON.stringify(tests), 'utf8');
+  console.log(`matrix.json written with ${tests.length} test(s): ${JSON.stringify(tests)}`);
+}
+
 function main() {
   const suiteTag = process.argv[2] || 'smoke';
-  const listFile = path.join(process.cwd(), 'temp-list.json');
 
+  let raw = '';
   try {
-    // Run playwright list and output to temp-list.json
-    execSync(`npx playwright test --grep "@${suiteTag}" --list --reporter=json > temp-list.json`, { 
-      cwd: process.cwd(), 
-      stdio: 'pipe' 
-    });
-  } catch (error) {
-    // It's normal for Playwright to throw an error if no tests match
+    // Capture stdout directly - no shell redirect needed
+    raw = execSync(
+      `npx playwright test --grep "@${suiteTag}" --list --reporter=json`,
+      { cwd: process.cwd(), encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] }
+    );
+  } catch (err: any) {
+    // Playwright exits non-zero when listing with no matches, stdout still has the JSON
+    raw = err.stdout || '';
   }
 
-  if (!fs.existsSync(listFile)) {
-    console.log(JSON.stringify([]));
+  if (!raw.trim()) {
+    console.log('No output from playwright --list');
+    writeMatrix([]);
     return;
   }
 
-  let raw = fs.readFileSync(listFile, 'utf8');
-  let data;
+  // Playwright sometimes outputs extra lines (env injections, deprecation warnings)
+  // before the actual JSON — extract just the JSON object
+  const startIndex = raw.indexOf('{');
+  const endIndex = raw.lastIndexOf('}');
+
+  if (startIndex === -1 || endIndex === -1) {
+    console.log('Could not find JSON in playwright output');
+    writeMatrix([]);
+    return;
+  }
+
+  let data: any;
   try {
-    data = JSON.parse(raw);
+    data = JSON.parse(raw.substring(startIndex, endIndex + 1));
   } catch (e) {
-    // Playwright sometimes outputs debugging info or warnings before the actual JSON
-    const startIndex = raw.indexOf('{');
-    const endIndex = raw.lastIndexOf('}');
-    if (startIndex !== -1 && endIndex !== -1) {
-      try {
-        data = JSON.parse(raw.substring(startIndex, endIndex + 1));
-      } catch (e2) {
-        console.log(JSON.stringify([]));
-        return;
-      }
-    } else {
-      console.log(JSON.stringify([]));
-      return;
-    }
+    console.log('Failed to parse playwright JSON output:', e);
+    writeMatrix([]);
+    return;
   }
 
   const testsToRun: string[] = [];
@@ -64,13 +70,7 @@ function main() {
     }
   }
 
-  // Cleanup
-  if (fs.existsSync(listFile)) {
-    fs.unlinkSync(listFile);
-  }
-
-  // Output purely the JSON array to matrix.json so GitHub Actions can parse it reliably
-  fs.writeFileSync('matrix.json', JSON.stringify(testsToRun), 'utf8');
+  writeMatrix(testsToRun);
 }
 
 main();
