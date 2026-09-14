@@ -1,6 +1,6 @@
 import { defineConfig, devices } from '@playwright/test';
 import * as dotenv from 'dotenv';
-import { EnvHelper } from './utils/env-helper';
+
 
 // Load variables from .env
 dotenv.config();
@@ -16,7 +16,7 @@ export default defineConfig({
     ['allure-playwright']
   ],
   use: {
-    baseURL: EnvHelper.getBaseUrl(),
+
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure'

@@ -58,7 +58,7 @@ function filterProjectSuites(suites: any[], excludeTestIds: Set<string>): any[] 
 function filterEventsByTestId(jsonlData: string, excludeTestIds: Set<string>): string {
   const lines = jsonlData.split('\n');
   const filteredLines: string[] = [];
-  
+
   for (const line of lines) {
     if (!line.trim()) continue;
     try {
@@ -67,7 +67,7 @@ function filterEventsByTestId(jsonlData: string, excludeTestIds: Set<string>): s
       if (!testId && event.params?.test?.testId) {
         testId = event.params.test.testId;
       }
-      
+
       if (!testId) {
         if (event.method === 'onProject' && event.params?.project?.suites) {
           event.params.project.suites = filterProjectSuites(event.params.project.suites, excludeTestIds);
@@ -77,7 +77,7 @@ function filterEventsByTestId(jsonlData: string, excludeTestIds: Set<string>): s
         }
         continue;
       }
-      
+
       if (!excludeTestIds.has(testId)) {
         filteredLines.push(line);
       }
@@ -126,15 +126,15 @@ function main() {
   for (const [index, zipFile] of initialZips.entries()) {
     const zip = new AdmZip(zipFile);
     const reportEntry = zip.getEntry('report.jsonl');
-    
+
     if (reportEntry) {
       const originalContent = reportEntry.getData().toString('utf8');
       const newContent = filterEventsByTestId(originalContent, rerunTestIds);
-      
+
       // Update the file in the zip
       zip.updateFile('report.jsonl', Buffer.from(newContent, 'utf8'));
     }
-    
+
     // Save modified zip to merged folder
     const targetPath = path.join(BLOB_DIR_MERGED, `initial-${index}.zip`);
     zip.writeZip(targetPath);
@@ -145,6 +145,23 @@ function main() {
   // 4. Generate final HTML report from the merged folder
   console.log('Generating final HTML report...');
   execSync('npx playwright merge-reports ./blob-report/merged --reporter=html', { stdio: 'inherit' });
+
+  // 5. Update initial state for subsequent reruns
+  console.log('Updating initial state for future reruns...');
+  fs.rmSync(BLOB_DIR_INITIAL, { recursive: true, force: true });
+  fs.mkdirSync(BLOB_DIR_INITIAL, { recursive: true });
+
+  const mergedZips = getZipFiles(BLOB_DIR_MERGED);
+  for (const zipFile of mergedZips) {
+    const fileName = path.basename(zipFile);
+    fs.copyFileSync(zipFile, path.join(BLOB_DIR_INITIAL, fileName));
+  }
+
+  // Clear the rerun folder so it's clean for the next iteration
+  if (fs.existsSync(BLOB_DIR_RERUN)) {
+    fs.rmSync(BLOB_DIR_RERUN, { recursive: true, force: true });
+  }
+
   console.log('Done! View the report in ./playwright-report');
 }
 

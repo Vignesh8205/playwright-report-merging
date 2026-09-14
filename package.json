@@ -7,6 +7,7 @@
     "test": "cross-env PLAYWRIGHT_BLOB_OUTPUT_DIR=blob-report/initial playwright test --reporter=blob",
     "test:ui": "playwright test --ui",
     "test:failed": "cross-env PLAYWRIGHT_BLOB_OUTPUT_DIR=blob-report/rerun playwright test --last-failed --reporter=blob",
+    "test:rerun": "tsx scripts/run-rerun.ts",
     "test:final-report": "tsx scripts/merge-and-replace.ts",
     "lint": "eslint .",
     "format": "prettier --write .",

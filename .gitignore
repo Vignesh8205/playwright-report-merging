@@ -2,3 +2,5 @@
 .agents/
 allure-results
 playwright-report
+blob-report/
+test-results
