@@ -1,19 +1,5 @@
 import { execSync } from 'child_process';
 import fs from 'fs';
-import path from 'path';
-
-function extractSpecs(suite: any, file: string, testsToRun: string[]) {
-  if (suite.specs) {
-    for (const spec of suite.specs) {
-      testsToRun.push(`${file}:${spec.line}`);
-    }
-  }
-  if (suite.suites) {
-    for (const subSuite of suite.suites) {
-      extractSpecs(subSuite, file, testsToRun);
-    }
-  }
-}
 
 function writeMatrix(tests: string[]) {
   fs.writeFileSync('matrix.json', JSON.stringify(tests), 'utf8');
@@ -25,13 +11,13 @@ function main() {
 
   let raw = '';
   try {
-    // Capture stdout directly - no shell redirect needed
+    // Use plain --list (text output) - much more reliable than --reporter=json
     raw = execSync(
-      `npx playwright test --grep "@${suiteTag}" --list --reporter=json`,
+      `npx playwright test --grep "@${suiteTag}" --list`,
       { cwd: process.cwd(), encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] }
     );
   } catch (err: any) {
-    // Playwright exits non-zero when listing with no matches, stdout still has the JSON
+    // Playwright may exit non-zero even for --list; stdout still has the list
     raw = err.stdout || '';
   }
 
@@ -41,32 +27,17 @@ function main() {
     return;
   }
 
-  // Playwright sometimes outputs extra lines (env injections, deprecation warnings)
-  // before the actual JSON — extract just the JSON object
-  const startIndex = raw.indexOf('{');
-  const endIndex = raw.lastIndexOf('}');
-
-  if (startIndex === -1 || endIndex === -1) {
-    console.log('Could not find JSON in playwright output');
-    writeMatrix([]);
-    return;
-  }
-
-  let data: any;
-  try {
-    data = JSON.parse(raw.substring(startIndex, endIndex + 1));
-  } catch (e) {
-    console.log('Failed to parse playwright JSON output:', e);
-    writeMatrix([]);
-    return;
-  }
-
+  // Parse text list output lines like:
+  //   [chromium] › smoke.spec.ts:4:7 › Smoke Test Suite › Smoke Test 1 @smoke
+  const seen = new Set<string>();
   const testsToRun: string[] = [];
-
-  if (data && data.suites) {
-    for (const rootSuite of data.suites) {
-      const file = rootSuite.file;
-      extractSpecs(rootSuite, file, testsToRun);
+  const regex = /›\s+([^\s›]+\.(?:spec|test)\.[jt]sx?):(\d+):\d+/g;
+  let match;
+  while ((match = regex.exec(raw)) !== null) {
+    const key = `${match[1]}:${match[2]}`;
+    if (!seen.has(key)) {
+      seen.add(key);
+      testsToRun.push(key);
     }
   }
 

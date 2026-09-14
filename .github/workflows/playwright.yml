@@ -61,11 +61,7 @@ jobs:
         id: set-matrix
         run: |
           echo "Discovered matrix: $(cat matrix.json)"
-          {
-            echo "matrix<<EOF"
-            cat matrix.json
-            echo "EOF"
-          } >> $GITHUB_OUTPUT
+          echo "matrix=$(cat matrix.json)" >> $GITHUB_OUTPUT
 
   execute:
     name: Execute Test
