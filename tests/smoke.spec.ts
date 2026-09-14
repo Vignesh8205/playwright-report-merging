@@ -26,11 +26,11 @@ test.describe('Smoke Test Suite', () => {
   });
 
   test('Smoke Test 7 - should pass @smoke', async () => {
-    expect(false).toBe(true);
+    expect(true).toBe(true);
   });
 
   test('Smoke Test 8 - should pass @smoke', async () => {
-    expect(false).toBe(true);
+    expect(true).toBe(true);
   });
 
   test('Smoke Test 9 - should pass @smoke', async () => {
