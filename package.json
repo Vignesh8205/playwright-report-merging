@@ -10,8 +10,7 @@
     "test:rerun": "tsx scripts/run-rerun.ts",
     "test:final-report": "tsx scripts/merge-and-replace.ts",
     "lint": "eslint .",
-    "format": "prettier --write .",
-    "report": "allure generate allure-results -o allure-report --clean && allure open allure-report"
+    "format": "prettier --write ."
   },
   "keywords": [],
   "author": "",
@@ -21,8 +20,6 @@
     "@playwright/test": "^1.62.1",
     "@types/adm-zip": "^0.5.8",
     "adm-zip": "^0.6.0",
-    "allure-commandline": "^2.43.0",
-    "allure-playwright": "^3.11.0",
     "cross-env": "^10.1.0",
     "dotenv": "^17.4.2",
     "eslint": "^10.9.1",

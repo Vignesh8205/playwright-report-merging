@@ -101,7 +101,7 @@ function main() {
   const rerunZips = getZipFiles(BLOB_DIR_RERUN);
   if (rerunZips.length === 0) {
     console.log('No rerun blobs found. Generating report from initial run only.');
-    execSync('npx playwright merge-reports ./blob-report/initial --reporter=html,allure-playwright', { stdio: 'inherit' });
+    execSync('npx playwright merge-reports ./blob-report/initial --reporter=html', { stdio: 'inherit' });
     return;
   }
 
