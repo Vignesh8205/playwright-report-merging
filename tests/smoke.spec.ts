@@ -38,6 +38,6 @@ test.describe('Smoke Test Suite', () => {
   });
 
   test('Smoke Test 10 - should pass @smoke', async () => {
-    expect(true).toBe(true);
+    expect(false).toBe(true);
   });
 });
